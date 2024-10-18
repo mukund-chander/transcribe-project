@@ -58,46 +58,46 @@ function App() {
       }
     };
 
-    async function readAudioFrom(file) {
-      const sampling_rate = 16000;
-      const audioCTX = new AudioContext({ sampleRate: sampling_rate });
-      const response = await file.arraybuffer();
-      const decoded = await audioCTX.decodeAudioData(response);
-      const audio = decoded.getChannelData(0);
-      return audio;
-    }
-
-    async function handleFormSubmission() {
-      if (!file && !audioStream) {
-        return;
-      }
-
-      let audio = await readAudioFrom(file ? file : audioStream);
-      const model_name = `openai/whisper-tiny.en`;
-
-      worker.current.postMessage({
-        type: MessageTypes.INFERENCE_REQUEST,
-        audio,
-        model_name,
-      });
-    }
-
     worker.current.addEventListener("message", onMessageReceived);
 
     return () =>
       worker.current.removeEventListener("message", onMessageReceived);
-  }, []);
+  });
 
+  async function readAudioFrom(file) {
+    const sampling_rate = 16000;
+    const audioCTX = new AudioContext({ sampleRate: sampling_rate });
+    const response = await file.arrayBuffer();
+    const decoded = await audioCTX.decodeAudioData(response);
+    const audio = decoded.getChannelData(0);
+    return audio;
+  }
+
+  async function handleFormSubmission() {
+    if (!file && !audioStream) {
+      return;
+    }
+
+    let audio = await readAudioFrom(file ? file : audioStream);
+    const model_name = `openai/whisper-tiny.en`;
+
+    worker.current.postMessage({
+      type: MessageTypes.INFERENCE_REQUEST,
+      audio,
+      model_name,
+    });
+  }
   return (
     <div className="flex flex-col max-w-[1000px] mx-auto w-full">
       <section className="min-h-screen flex flex-col">
         <Header />
         {output ? (
-          <Information />
+          <Information output={output} />
         ) : loading ? (
           <Transcribing />
         ) : isAudioAvailable ? (
           <FileDisplay
+            handleFormSubmission={handleFormSubmission}
             handleAudioReset={handleAudioReset}
             file={file}
             audioStream={audioStream}
